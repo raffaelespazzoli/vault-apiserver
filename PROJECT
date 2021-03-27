@@ -1,0 +1,18 @@
+domain: redhat.io
+layout: go.kubebuilder.io/v3
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: vault-apiserver
+repo: github.com/redhat-cop/vault-apiserver
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: redhat.io
+  group: redhatcop
+  kind: SecretEngine
+  path: github.com/redhat-cop/vault-apiserver/api/v1alpha1
+  version: v1alpha1
+version: "3"
