@@ -23,3 +23,8 @@ testbin/*
 *.swp
 *.swo
 *~
+
+.odo/odo-file-index.json
+
+build
+tilt_modules

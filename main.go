@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"flag"
 	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -27,9 +26,8 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"sigs.k8s.io/apiserver-runtime/pkg/builder"
+	"sigs.k8s.io/apiserver-runtime/pkg/experimental/storage/filepath"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	redhatcopv1alpha1 "github.com/redhat-cop/vault-apiserver/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
@@ -47,46 +45,46 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 }
 
+// +kubebuilder:rbac:groups="",resources=configmaps;namespaces,verbs=get;list;watch
+// +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=validatingwebhookconfigurations;mutatingwebhookconfigurations,verbs=get;list;watch
+// +kubebuilder:rbac:groups=flowcontrol.apiserver.k8s.io,resources=prioritylevelconfigurations;flowschemas,verbs=get;list;watch
+// +kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create
+
 func main() {
-	var metricsAddr string
-	var enableLeaderElection bool
-	var probeAddr string
-	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
-	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
-	opts := zap.Options{
-		Development: true,
-	}
-	opts.BindFlags(flag.CommandLine)
-	flag.Parse()
+	// var metricsAddr string
+	// var enableLeaderElection bool
+	// var probeAddr string
+	// flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
+	// flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	// flag.BoolVar(&enableLeaderElection, "leader-elect", false,
+	// 	"Enable leader election for controller manager. "+
+	// 		"Enabling this will ensure there is only one active controller manager.")
+	// opts := zap.Options{
+	// 	Development: true,
+	// }
+	// opts.BindFlags(flag.CommandLine)
+	// flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	// ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
-		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "e04e27b0.redhat.io",
-	})
-	if err != nil {
-		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
-	}
+	// mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	// 	Scheme:                 scheme,
+	// 	MetricsBindAddress:     metricsAddr,
+	// 	Port:                   9443,
+	// 	HealthProbeBindAddress: probeAddr,
+	// 	LeaderElection:         enableLeaderElection,
+	// 	LeaderElectionID:       "e04e27b0.redhat.io",
+	// })
+	// if err != nil {
+	// 	setupLog.Error(err, "unable to start manager")
+	// 	os.Exit(1)
+	// }
 
 	//+kubebuilder:scaffold:builder
 
-	err = builder.APIServer.
-		WithResource(&redhatcopv1alpha1.SecretEngine{}). // namespaced resource
+	err := builder.APIServer.
+		WithResourceAndHandler(&redhatcopv1alpha1.SecretEngine{}, filepath.NewJSONFilepathStorageProvider(&redhatcopv1alpha1.SecretEngine{}, "data")). // namespaced resource
 		WithLocalDebugExtension().
-		WithOptionsFns(func(options *builder.ServerOptions) *builder.ServerOptions {
-			options.RecommendedOptions.CoreAPI = nil
-			options.RecommendedOptions.Admission = nil
-			return options
-		}).
 		Execute()
 
 	if err != nil {
@@ -94,18 +92,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up health check")
-		os.Exit(1)
-	}
-	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up ready check")
-		os.Exit(1)
-	}
+	// if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+	// 	setupLog.Error(err, "unable to set up health check")
+	// 	os.Exit(1)
+	// }
+	// if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
+	// 	setupLog.Error(err, "unable to set up ready check")
+	// 	os.Exit(1)
+	// }
 
-	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running manager")
-		os.Exit(1)
-	}
+	// setupLog.Info("starting manager")
+	// if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	// 	setupLog.Error(err, "problem running manager")
+	// 	os.Exit(1)
+	// }
 }

@@ -1,0 +1,15 @@
+kind: APIService
+apiVersion: apiregistration.k8s.io/v1
+metadata:
+  name: v1alpha1.vault.redhatcop.redhat.io
+  annotations:
+    service.alpha.openshift.io/inject-cabundle: 'true'
+spec:
+  service:
+    namespace: vault-apiserver-dev
+    name: vault-apiserver
+    port: 8443
+  group: vault.redhatcop.redhat.io
+  version: v1alpha1
+  groupPriorityMinimum: 9900
+  versionPriority: 15

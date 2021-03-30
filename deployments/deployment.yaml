@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault-apiserver
+  labels:
+    app: vault-apiserver
+spec:
+  selector:
+    matchLabels:
+      app: vault-apiserver
+  template:
+    metadata:
+      labels:
+        app: vault-apiserver
+    spec:
+      containers:
+      - name: vault-apiserver
+        image: quay.io/raffaelespazzoli/vault-apiserver
+        ports:
+        - containerPort: 8443
+        args:
+        - --etcd-servers=https://10.0.152.128:2379,https://10.0.180.240:2379,https://10.0.213.129:2379
+        - --etcd-cafile=/etc/etcd-serving-ca/ca-bundle.crt 
+        - --etcd-certfile=/etc/etcd-client/tls.crt 
+        - --etcd-keyfile=/etc/etcd-client/tls.key 
+        - --tls-cert-file=/etc/serving-certs/tls.crt 
+        - --tls-private-key-file=/etc/serving-certs/tls.key 
+        - --secure-port=8443
+        volumeMounts:
+        - name: etcd-client
+          mountPath: /etc/etcd-client
+        - name: etcd-serving-ca
+          mountPath: /etc/etcd-serving-ca
+        - name: serving-certs
+          mountPath: /etc/serving-certs
+      volumes:
+        - name: etcd-client
+          secret:
+            secretName: etcd-client
+            defaultMode: 420
+        - name: etcd-serving-ca
+          configMap:
+            name: etcd-serving-ca
+            defaultMode: 420
+        - name: serving-certs
+          secret:
+            secretName: serving-certs
+            defaultMode: 420        

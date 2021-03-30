@@ -86,6 +86,10 @@ build: generate fmt vet ## Build manager binary.
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
+run-odo: manifests generate fmt vet
+	#go run ./main.go --etcd-servers etcd.openshift-etcd.svc:2379 --secure-port 8443
+	go run ./main.go --etcd-servers "https://10.0.152.128:2379,https://10.0.180.240:2379,https://10.0.213.129:2379" --etcd-cafile /etc/etcd-serving-ca/ca-bundle.crt --etcd-certfile /etc/etcd-client/tls.crt --etcd-keyfile /etc/etcd-client/tls.key --tls-cert-file /etc/serving-certs/tls.crt --tls-private-key-file /etc/serving-certs/tls.key --secure-port 8443
+
 docker-build: test ## Build docker image with the manager.
 	docker build -t ${IMG} .
 
