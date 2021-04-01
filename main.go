@@ -26,10 +26,10 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"sigs.k8s.io/apiserver-runtime/pkg/builder"
-	"sigs.k8s.io/apiserver-runtime/pkg/experimental/storage/filepath"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	redhatcopv1alpha1 "github.com/redhat-cop/vault-apiserver/api/v1alpha1"
+	"github.com/redhat-cop/vault-apiserver/vaultstorage"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -83,7 +83,7 @@ func main() {
 	//+kubebuilder:scaffold:builder
 
 	err := builder.APIServer.
-		WithResourceAndHandler(&redhatcopv1alpha1.SecretEngine{}, filepath.NewJSONFilepathStorageProvider(&redhatcopv1alpha1.SecretEngine{}, "data")). // namespaced resource
+		WithResourceAndHandler(&redhatcopv1alpha1.SecretEngine{}, vaultstorage.NewVaultMountStorageProvider()). // namespaced resource
 		WithLocalDebugExtension().
 		Execute()
 

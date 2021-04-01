@@ -1,0 +1,8 @@
+global:
+  tlsDisable: true
+  openshift: true
+
+vault:  
+  ui:
+    enabled: true
+

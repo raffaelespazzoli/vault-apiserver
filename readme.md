@@ -1,5 +1,37 @@
 ## Local Development
 
+deploy and configure vault
+
+```shell
+helm upgrade vault hashicorp/vault -i --create-namespace -n vault -f ./deployments/vault-values.yaml
+oc expose service vault --port=8200 -n vault
+export VAULT_ADDR=http://$(oc get route vault -n vault -o jsonpath='{.spec.host}')
+export HA_INIT_RESPONSE=$(vault operator init -format=json -key-shares 1 -key-threshold 1 -recovery-shares 1 -recovery-threshold 1)
+
+HA_UNSEAL_KEY=$(echo "$HA_INIT_RESPONSE" | jq -r .unseal_keys_b64[0])
+HA_VAULT_TOKEN=$(echo "$HA_INIT_RESPONSE" | jq -r .root_token)
+
+echo "$HA_UNSEAL_KEY"
+echo "$HA_VAULT_TOKEN"
+
+#here we are saving these variable in a secret, this is probably not what you should do in a production environment
+oc delete secret vault-init -n vault
+oc create secret generic vault-init -n vault --from-literal=unseal_key=${HA_UNSEAL_KEY} --from-literal=root_token=${HA_VAULT_TOKEN}
+
+vault operator unseal ${HA_UNSEAL_KEY}
+
+export VAULT_TOKEN=$(oc get secret vault-init -n vault -o jsonpath='{.data.root_token}'| base64 -d )
+vault auth enable -tls-skip-verify kubernetes 
+export sa_secret_name=$(oc get sa vault -n vault -o jsonpath='{.secrets[*].name}' | grep -o '\b\w*\-token-\w*\b')
+export api_url=https://kubernetes.default.svc:443
+oc get secret ${sa_secret_name} -n vault -o jsonpath='{.data.ca\.crt}' | base64 -d > /tmp/ca.crt
+vault write -tls-skip-verify auth/kubernetes/config token_reviewer_jwt="$(oc serviceaccounts get-token vault -n vault)" kubernetes_host=${api_url} kubernetes_ca_cert=@/tmp/ca.crt
+vault write -tls-skip-verify auth/kubernetes/role/vault-apiserver-dev bound_service_account_names=default bound_service_account_namespaces=vault-apiserver-dev policies=vault-api-server
+vault policy write -tls-skip-verify vault-api-server ./deployments/vault-apiserver-policy.hcl
+```
+
+deploy and develop with api-server
+
 ```shell
 oc new-project vault-apiserver-dev
 oc annotate namespace vault-apiserver-dev openshift.io/node-selector="node-role.kubernetes.io/master=" --overwrite
@@ -14,6 +46,12 @@ kustomize build ./config/local-development | oc apply -f - -n vault-apiserver-de
 tilt up
 ```
 
+test
+
+```shell
+oc create -f ./test/secretengine.yaml -n vault-apiserver-dev
+
+```
 
 --audit-policy-file string                                Path to the file that defines the audit policy configuration.
       --audit-webhook-batch-buffer-size int                     The size of the buffer to store events before batching and writing. Only used in batch mode. (default 10000)

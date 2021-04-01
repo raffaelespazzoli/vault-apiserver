@@ -18,6 +18,9 @@ spec:
         image: quay.io/raffaelespazzoli/vault-apiserver
         ports:
         - containerPort: 8443
+        env: 
+        - name: VAULT_ADDR
+          value: http://vault.vault.svc:8200
         args:
         - --etcd-servers=https://10.0.152.128:2379,https://10.0.180.240:2379,https://10.0.213.129:2379
         - --etcd-cafile=/etc/etcd-serving-ca/ca-bundle.crt 
@@ -26,6 +29,7 @@ spec:
         - --tls-cert-file=/etc/serving-certs/tls.crt 
         - --tls-private-key-file=/etc/serving-certs/tls.key 
         - --secure-port=8443
+        #- --v=4
         volumeMounts:
         - name: etcd-client
           mountPath: /etc/etcd-client

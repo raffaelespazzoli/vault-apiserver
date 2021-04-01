@@ -8,7 +8,7 @@ compile_cmd = 'CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o build/vault-api
 local_resource(
   'vault-apiserver-compile',
   compile_cmd,
-  deps=['./main.go'])
+  deps=['./main.go','./api','./vaultstorage'])
 
 
 custom_build(
