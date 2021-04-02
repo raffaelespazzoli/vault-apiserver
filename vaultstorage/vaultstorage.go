@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/go-logr/logr"
 	vault "github.com/hashicorp/vault/api"
@@ -84,6 +85,8 @@ func NewVaultMountResource() (rest.Storage, error) {
 		log.Error(err, "unable to set up client toke watcher")
 		return nil, err
 	}
+
+	go tokenWatcher.Start()
 
 	go func() {
 		for {
@@ -209,17 +212,23 @@ func (f *vaultMountResource) Get(ctx context.Context, name string, options *meta
 	}
 	if ri, ok := genericapirequest.RequestInfoFrom(ctx); ok {
 		for path, mountOutput := range mounts {
-			f.log.Info("analysing mount", "path", path)
+			//remove trailing slash
+			path = strings.Trim(path, "/")
+			f.log.Info("analysing mount", "path", path, "len", len(strings.Split(path, "/")))
+			f.log.Info("", "namespace", ri.Namespace, "name", ri.Name)
 			if len(strings.Split(path, "/")) == 2 && strings.Split(path, "/")[0] == ri.Namespace && strings.Split(path, "/")[1] == ri.Name {
+				f.log.Info("found!", "path", path)
 				return &redhatcopv1alpha1.SecretEngine{
 					TypeMeta: metav1.TypeMeta{
 						APIVersion: "vault.redhatcop.redhat.io/v1alpha1",
 						Kind:       "SecretEngine",
 					},
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      strings.Split(path, "/")[1],
-						Namespace: strings.Split(path, "/")[0],
-						UID:       types.UID(mountOutput.UUID),
+						Name:              strings.Split(path, "/")[1],
+						Namespace:         strings.Split(path, "/")[0],
+						UID:               types.UID(mountOutput.UUID),
+						ResourceVersion:   mountOutput.UUID,
+						CreationTimestamp: metav1.NewTime(time.Now()),
 					},
 					Spec: redhatcopv1alpha1.SecretEngineSpec{
 						Mount: *redhatcopv1alpha1.FromMountOutput(mountOutput),

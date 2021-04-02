@@ -27,6 +27,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"sigs.k8s.io/apiserver-runtime/pkg/builder"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	redhatcopv1alpha1 "github.com/redhat-cop/vault-apiserver/api/v1alpha1"
 	"github.com/redhat-cop/vault-apiserver/vaultstorage"
@@ -59,13 +60,8 @@ func main() {
 	// flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 	// 	"Enable leader election for controller manager. "+
 	// 		"Enabling this will ensure there is only one active controller manager.")
-	// opts := zap.Options{
-	// 	Development: true,
-	// }
-	// opts.BindFlags(flag.CommandLine)
-	// flag.Parse()
 
-	// ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	ctrl.SetLogger(zap.New())
 
 	// mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 	// 	Scheme:                 scheme,

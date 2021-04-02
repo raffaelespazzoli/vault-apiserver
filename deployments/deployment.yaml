@@ -29,7 +29,7 @@ spec:
         - --tls-cert-file=/etc/serving-certs/tls.crt 
         - --tls-private-key-file=/etc/serving-certs/tls.key 
         - --secure-port=8443
-        #- --v=4
+        - --v=10
         volumeMounts:
         - name: etcd-client
           mountPath: /etc/etcd-client
