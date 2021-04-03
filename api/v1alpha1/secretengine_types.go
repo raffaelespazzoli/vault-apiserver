@@ -73,6 +73,7 @@ func (in SecretEngineStatus) CopyTo(parent resource.ObjectWithStatusSubResource)
 }
 
 // SecretEngineSpec defines the desired state of SecretEngine
+// +k8s:openapi-gen=true
 type SecretEngineSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
@@ -82,16 +83,15 @@ type SecretEngineSpec struct {
 }
 
 // SecretEngineStatus defines the observed state of SecretEngine
+// +k8s:openapi-gen=true
 type SecretEngineStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	MountStatus Mount  `json:"mountStatus,omitempty"`
-	Error       string `json:"error,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-
+// +k8s:openapi-gen=true
 // SecretEngine is the Schema for the secretengines API
 type SecretEngine struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -114,6 +114,7 @@ func init() {
 	SchemeBuilder.Register(&SecretEngine{}, &SecretEngineList{})
 }
 
+// +k8s:openapi-gen=true
 type Mount struct {
 	// +kubebuilder:validation:Required
 	Type string `json:"type"`
@@ -129,55 +130,60 @@ type Mount struct {
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default:=false
-	SealWrap bool `json:"seal_wrap" mapstructure:"seal_wrap"`
+	SealWrap bool `json:"sealWrap"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default:=false
-	ExternalEntropyAccess bool `json:"external_entropy_access" mapstructure:"external_entropy_access"`
+	ExternalEntropyAccess bool `json:"externalEntropyAccess"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default:={"version":"1"}
 	// +mapType=granular
-	Options map[string]string `json:"options"`
+	Options map[string]string `json:"options,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type MountConfig struct {
 	// +kubebuilder:validation:Optional
 	// +mapType=granular
-	Options map[string]string `json:"options" mapstructure:"options"`
+	Options map[string]string `json:"options,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	DefaultLeaseTTL string `json:"default_lease_ttl" mapstructure:"default_lease_ttl"`
+	DefaultLeaseTTL string `json:"defaultLeaseTTL"`
 
 	// +kubebuilder:validation:Optional
-	Description *string `json:"description,omitempty" mapstructure:"description"`
+	Description *string `json:"description,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	MaxLeaseTTL string `json:"max_lease_ttl" mapstructure:"max_lease_ttl"`
+	MaxLeaseTTL string `json:"maxLeaseTTL"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default:=false
-	ForceNoCache bool `json:"force_no_cache" mapstructure:"force_no_cache"`
+	ForceNoCache bool `json:"forceNoCache"`
 
 	// +kubebuilder:validation:Optional
-	AuditNonHMACRequestKeys []string `json:"audit_non_hmac_request_keys,omitempty" mapstructure:"audit_non_hmac_request_keys"`
+	// +listType=set
+	AuditNonHMACRequestKeys []string `json:"auditNonHMACRequestKeys,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	AuditNonHMACResponseKeys []string `json:"audit_non_hmac_response_keys,omitempty" mapstructure:"audit_non_hmac_response_keys"`
+	// +listType=set
+	AuditNonHMACResponseKeys []string `json:"auditNonHMACResponseKeys,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Enum:={"unauth","hidden"}
 	// +kubebuilder:default:="hidden"
-	ListingVisibility string `json:"listing_visibility,omitempty" mapstructure:"listing_visibility"`
+	ListingVisibility string `json:"listingVisibility,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	PassthroughRequestHeaders []string `json:"passthrough_request_headers,omitempty" mapstructure:"passthrough_request_headers"`
+	// +listType=set
+	PassthroughRequestHeaders []string `json:"passthroughRequestHeaders,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	AllowedResponseHeaders []string `json:"allowed_response_headers,omitempty" mapstructure:"allowed_response_headers"`
+	// +listType=set
+	AllowedResponseHeaders []string `json:"allowedResponseHeaders,omitempty"`
 
 	// +kubebuilder:validation:Optional
-	TokenType string `json:"token_type,omitempty" mapstructure:"token_type"`
+	TokenType string `json:"tokenType,omitempty"`
 }
 
 func FromMountConfigOutput(mountConfigOutput *vault.MountConfigOutput) *MountConfig {

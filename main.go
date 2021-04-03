@@ -81,6 +81,7 @@ func main() {
 	err := builder.APIServer.
 		WithResourceAndHandler(&redhatcopv1alpha1.SecretEngine{}, vaultstorage.NewVaultMountStorageProvider()). // namespaced resource
 		WithLocalDebugExtension().
+		//WithOpenAPIDefinitions("vault.redhatcop.redhat.io", "v1alpha1", redhatcopv1alpha1.GetOpenAPIDefinitions).
 		Execute()
 
 	if err != nil {

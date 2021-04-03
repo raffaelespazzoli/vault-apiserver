@@ -9,6 +9,7 @@ require (
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/go-logr/logr v0.2.1
 	github.com/go-logr/zapr v0.2.0 // indirect
+	github.com/go-openapi/spec v0.19.3
 	github.com/go-test/deep v1.0.7 // indirect
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/google/go-cmp v0.5.4 // indirect
@@ -31,6 +32,7 @@ require (
 	k8s.io/apimachinery v0.20.2
 	k8s.io/apiserver v0.20.2
 	k8s.io/client-go v0.20.2
+	k8s.io/kube-openapi v0.0.0-20201113171705-d219536bb9fd
 	sigs.k8s.io/apiserver-runtime v0.0.0-20201103144618-b52895ea8337
 	sigs.k8s.io/controller-runtime v0.6.0
 )
