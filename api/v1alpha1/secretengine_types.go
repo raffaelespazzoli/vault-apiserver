@@ -89,10 +89,13 @@ type SecretEngineStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 }
 
+// SecretEngine is the Schema for the secretengines API
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-// +k8s:openapi-gen=true
-// SecretEngine is the Schema for the secretengines API
+//+k8s:openapi-gen=true
+//+kubebuilder:printcolumn:name:"Name",type="string",JSONPath=".metadata.name"
+//+kubebuilder:printcolumn:name:"Namespace",type="string",JSONPath=".metadata.namespace"
+//+kubebuilder:printcolumn:name:"Type",type="string",JSONPath=".spec.type"
 type SecretEngine struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

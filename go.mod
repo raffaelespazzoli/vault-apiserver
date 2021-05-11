@@ -13,7 +13,6 @@ require (
 	github.com/go-test/deep v1.0.7 // indirect
 	github.com/golang/snappy v0.0.2 // indirect
 	github.com/google/go-cmp v0.5.4 // indirect
-	github.com/google/martian v2.1.0+incompatible
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v0.15.0 // indirect
@@ -25,14 +24,16 @@ require (
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/prometheus/common v0.11.1 // indirect
+	github.com/spf13/pflag v1.0.5
+	github.com/spf13/viper v1.7.1
 	go.uber.org/zap v1.14.1 // indirect
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
 	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c // indirect
 	golang.org/x/text v0.3.5 // indirect
-	k8s.io/apimachinery v0.20.2
-	k8s.io/apiserver v0.20.2
-	k8s.io/client-go v0.20.2
+	k8s.io/apimachinery v0.20.5
+	k8s.io/apiserver v0.20.5
+	k8s.io/client-go v0.20.5
 	k8s.io/kube-openapi v0.0.0-20201113171705-d219536bb9fd
-	sigs.k8s.io/apiserver-runtime v0.0.0-20201103144618-b52895ea8337
+	sigs.k8s.io/apiserver-runtime v1.0.1
 	sigs.k8s.io/controller-runtime v0.6.0
 )

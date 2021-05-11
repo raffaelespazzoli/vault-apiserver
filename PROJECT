@@ -15,4 +15,21 @@ resources:
   kind: SecretEngine
   path: github.com/redhat-cop/vault-apiserver/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: redhatcop.redhat.io
+  group: vault
+  kind: Policy
+  path: github.com/redhat-cop/vault-apiserver/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: redhatcop.redhat.io
+  group: vault
+  kind: PolicyBinding
+  path: github.com/redhat-cop/vault-apiserver/api/v1alpha1
+  version: v1alpha1
 version: "3"

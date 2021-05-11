@@ -3,7 +3,6 @@ package vaultstorage
 import (
 	"context"
 	"errors"
-	"io/ioutil"
 	"reflect"
 	"strings"
 	"sync"
@@ -24,95 +23,34 @@ import (
 	"k8s.io/apiserver/pkg/registry/generic"
 	"k8s.io/apiserver/pkg/registry/rest"
 	builderrest "sigs.k8s.io/apiserver-runtime/pkg/builder/rest"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
+
+// NewVaultStorageProvider represent a mapping between a kube object and vault resource
+// rootpath is the base path for that resource
+func NewVaultMountStorageProvider(client *vault.Client, baselog logr.Logger) builderrest.ResourceHandlerProvider {
+	return func(scheme *runtime.Scheme, getter generic.RESTOptionsGetter) (rest.Storage, error) {
+		return &vaultMountResource{
+			vclient:      client,
+			log:          baselog.WithName("VaultMountResource"),
+			isNamespaced: (&redhatcopv1alpha1.SecretEngine{}).NamespaceScoped(),
+			newFunc:      (&redhatcopv1alpha1.SecretEngine{}).New,
+			newListFunc:  (&redhatcopv1alpha1.SecretEngine{}).NewList,
+			watchers:     make(map[int]*jsonWatch, 10),
+		}, nil
+	}
+}
 
 var _ rest.Storage = &vaultMountResource{}
 var _ rest.Getter = &vaultMountResource{}
-var _ rest.Lister = &vaultMountResource{}
+
+//var _ rest.Lister = &vaultMountResource{}
 var _ rest.CreaterUpdater = &vaultMountResource{}
 var _ rest.GracefulDeleter = &vaultMountResource{}
 var _ rest.CollectionDeleter = &vaultMountResource{}
 var _ rest.Watcher = &vaultMountResource{}
-var _ rest.StandardStorage = &vaultMountResource{}
+
+//var _ rest.StandardStorage = &vaultMountResource{}
 var _ rest.Scoper = &vaultMountResource{}
-
-// NewVaultStorageProvider represent a mapping between a kube object and vault resource
-// rootpath is the base path for that resource
-func NewVaultMountStorageProvider() builderrest.ResourceHandlerProvider {
-	return func(scheme *runtime.Scheme, getter generic.RESTOptionsGetter) (rest.Storage, error) {
-		return NewVaultMountResource()
-	}
-}
-
-type kubernetesAuthInput struct {
-	JWT  string `json:"jwt"`
-	Role string `json:"role"`
-}
-
-func NewVaultMountResource() (rest.Storage, error) {
-	log := ctrl.Log.WithName("VaultMountResource")
-	log.Info("initializing VaultMountResource")
-	client, err := vault.NewClient(vault.DefaultConfig())
-	if err != nil {
-		log.Error(err, "unable to build vault client")
-		return nil, err
-	}
-
-	token, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
-	if err != nil {
-		log.Error(err, "unable to read service account token")
-		return nil, err
-	}
-
-	secret, err := client.Logical().Write("/auth/kubernetes/login", map[string]interface{}{
-		"jwt":  string(token),
-		"role": "vault-apiserver-dev",
-	})
-
-	if err != nil {
-		log.Error(err, "unable to login to vault")
-		return nil, err
-	}
-
-	client.SetToken(secret.Auth.ClientToken)
-
-	tokenWatcher, err := client.NewRenewer(&vault.RenewerInput{
-		Secret: secret,
-	})
-
-	if err != nil {
-		log.Error(err, "unable to set up client toke watcher")
-		return nil, err
-	}
-
-	go tokenWatcher.Start()
-
-	go func() {
-		for {
-			select {
-			case renewOutput := <-tokenWatcher.RenewCh():
-				{
-					client.SetToken(renewOutput.Secret.Auth.ClientToken)
-				}
-			case _ = <-tokenWatcher.DoneCh():
-				{
-					return
-				}
-			}
-		}
-	}()
-
-	rest := &vaultMountResource{
-		vclient:      client,
-		log:          log,
-		isNamespaced: (&redhatcopv1alpha1.SecretEngine{}).NamespaceScoped(),
-		newFunc:      (&redhatcopv1alpha1.SecretEngine{}).New,
-		newListFunc:  (&redhatcopv1alpha1.SecretEngine{}).NewList,
-		watchers:     make(map[int]*jsonWatch, 10),
-	}
-	return rest, nil
-}
 
 type vaultMountResource struct {
 	vclient      *vault.Client
@@ -122,6 +60,13 @@ type vaultMountResource struct {
 	newListFunc  func() runtime.Object
 	watchers     map[int]*jsonWatch
 	muWatchers   sync.RWMutex
+}
+
+func (f *vaultMountResource) GetLock() *sync.RWMutex {
+	return &f.muWatchers
+}
+func (f *vaultMountResource) GetWatchers() map[int]*jsonWatch {
+	return f.watchers
 }
 
 func (f *vaultMountResource) New() runtime.Object {
@@ -134,10 +79,6 @@ func (f *vaultMountResource) NewList() runtime.Object {
 
 func (f *vaultMountResource) NamespaceScoped() bool {
 	return f.isNamespaced
-}
-
-func (f *vaultMountResource) ConvertToTable(ctx context.Context, object runtime.Object, tableOptions runtime.Object) (*metav1.Table, error) {
-	return &metav1.Table{}, nil
 }
 
 func (f *vaultMountResource) DeleteCollection(ctx context.Context, deleteValidation rest.ValidateObjectFunc, options *metav1.DeleteOptions, listOptions *metainternalversion.ListOptions) (runtime.Object, error) {
@@ -197,7 +138,7 @@ func (f *vaultMountResource) Update(ctx context.Context, name string, objInfo re
 	}
 
 	f.notifyWatchers(watch.Event{
-		Type:   watch.Added,
+		Type:   watch.Modified,
 		Object: obj,
 	})
 
@@ -258,6 +199,7 @@ func (f *vaultMountResource) List(ctx context.Context, options *metainternalvers
 	}
 	if ns, ok := genericapirequest.NamespaceFrom(ctx); ok {
 		for path, mountOutput := range mounts {
+			path = strings.Trim(path, "/")
 			if len(strings.Split(path, "/")) != 2 || strings.Split(path, "/")[0] != ns {
 				continue
 			}
@@ -344,7 +286,7 @@ func (f *vaultMountResource) Delete(ctx context.Context, name string, deleteVali
 			return nil, false, err
 		}
 		f.notifyWatchers(watch.Event{
-			Type:   watch.Added,
+			Type:   watch.Deleted,
 			Object: obj,
 		})
 		return obj, true, nil
@@ -358,22 +300,6 @@ func (f *vaultMountResource) notifyWatchers(ev watch.Event) {
 		w.ch <- ev
 	}
 	f.muWatchers.RUnlock()
-}
-
-type jsonWatch struct {
-	f  *vaultMountResource
-	id int
-	ch chan watch.Event
-}
-
-func (w *jsonWatch) Stop() {
-	w.f.muWatchers.Lock()
-	delete(w.f.watchers, w.id)
-	w.f.muWatchers.Unlock()
-}
-
-func (w *jsonWatch) ResultChan() <-chan watch.Event {
-	return w.ch
 }
 
 func (f *vaultMountResource) Watch(ctx context.Context, options *metainternalversion.ListOptions) (watch.Interface, error) {

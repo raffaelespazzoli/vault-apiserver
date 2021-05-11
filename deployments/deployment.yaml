@@ -21,31 +21,16 @@ spec:
         env: 
         - name: VAULT_ADDR
           value: http://vault.vault.svc:8200
-        args:
-        - --etcd-servers=https://10.0.152.128:2379,https://10.0.180.240:2379,https://10.0.213.129:2379
-        - --etcd-cafile=/etc/etcd-serving-ca/ca-bundle.crt 
-        - --etcd-certfile=/etc/etcd-client/tls.crt 
-        - --etcd-keyfile=/etc/etcd-client/tls.key 
+        args: 
         - --tls-cert-file=/etc/serving-certs/tls.crt 
         - --tls-private-key-file=/etc/serving-certs/tls.key 
         - --secure-port=8443
-        - --v=4
+        - --kubernetes-authorization-mount-path=auth/kubernetes
+        # --v=4
         volumeMounts:
-        - name: etcd-client
-          mountPath: /etc/etcd-client
-        - name: etcd-serving-ca
-          mountPath: /etc/etcd-serving-ca
         - name: serving-certs
           mountPath: /etc/serving-certs
       volumes:
-        - name: etcd-client
-          secret:
-            secretName: etcd-client
-            defaultMode: 420
-        - name: etcd-serving-ca
-          configMap:
-            name: etcd-serving-ca
-            defaultMode: 420
         - name: serving-certs
           secret:
             secretName: serving-certs
