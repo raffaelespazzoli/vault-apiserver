@@ -23,16 +23,25 @@ import (
 
 // NewVaultStorageProvider represent a mapping between a kube object and vault resource
 // rootpath is the base path for that resource
-func NewVaultPolicyResourceProvider(client *vault.Client, baselog logr.Logger) builderrest.ResourceHandlerProvider {
+func NewVaultPolicyResourceProvider(baselog logr.Logger) builderrest.ResourceHandlerProvider {
+
+	vaultPolicyResource := vaultPolicyResource{
+		log:          baselog.WithName("VaultPolicyResource"),
+		isNamespaced: (&redhatcopv1alpha1.SecretEngine{}).NamespaceScoped(),
+		newFunc:      (&redhatcopv1alpha1.SecretEngine{}).New,
+		newListFunc:  (&redhatcopv1alpha1.SecretEngine{}).NewList,
+		watchers:     make(map[int]*jsonWatch, 10),
+	}
+
 	return func(scheme *runtime.Scheme, getter generic.RESTOptionsGetter) (rest.Storage, error) {
-		return &vaultMountResource{
-			vclient:      client,
-			log:          baselog.WithName("VaultRoleResource"),
-			isNamespaced: (&redhatcopv1alpha1.SecretEngine{}).NamespaceScoped(),
-			newFunc:      (&redhatcopv1alpha1.SecretEngine{}).New,
-			newListFunc:  (&redhatcopv1alpha1.SecretEngine{}).NewList,
-			watchers:     make(map[int]*jsonWatch, 10),
-		}, nil
+		client, err := getClient(vaultPolicyResource.log)
+
+		if err != nil {
+			baselog.Error(err, "unable to set up vault client")
+			return nil, err
+		}
+		vaultPolicyResource.vclient = client
+		return &vaultPolicyResource, nil
 	}
 }
 

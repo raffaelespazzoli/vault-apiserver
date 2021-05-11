@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"io/ioutil"
 	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -35,9 +34,7 @@ import (
 	"github.com/redhat-cop/vault-apiserver/vaultstorage"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-
 	//+kubebuilder:scaffold:imports
-	vault "github.com/hashicorp/vault/api"
 )
 
 var (
@@ -86,17 +83,11 @@ func main() {
 	//+kubebuilder:scaffold:builder
 
 	baselog := ctrl.Log.WithName("apiserver")
-	vaultclient, err := getClient()
-
-	if err != nil {
-		setupLog.Error(err, "unable to set up vault client")
-		os.Exit(1)
-	}
 
 	cmd, err := builder.APIServer.
-		WithResourceAndHandler(&redhatcopv1alpha1.SecretEngine{}, vaultstorage.NewVaultMountStorageProvider(vaultclient, baselog)).
-		WithResourceAndHandler(&redhatcopv1alpha1.PolicyBinding{}, vaultstorage.NewVaultRoleResourceProvider(vaultclient, baselog)).
-		WithResourceAndHandler(&redhatcopv1alpha1.Policy{}, vaultstorage.NewVaultPolicyResourceProvider(vaultclient, baselog)).
+		WithResourceAndHandler(&redhatcopv1alpha1.SecretEngine{}, vaultstorage.NewVaultMountStorageProvider(baselog)).
+		WithResourceAndHandler(&redhatcopv1alpha1.PolicyBinding{}, vaultstorage.NewVaultRoleResourceProvider(baselog)).
+		WithResourceAndHandler(&redhatcopv1alpha1.Policy{}, vaultstorage.NewVaultPolicyResourceProvider(baselog)).
 		WithLocalDebugExtension().
 		WithoutEtcd().
 		//WithOpenAPIDefinitions("vault.redhatcop.redhat.io", "v1alpha1", redhatcopv1alpha1.GetOpenAPIDefinitions).
@@ -132,58 +123,4 @@ func main() {
 	// 	setupLog.Error(err, "problem running manager")
 	// 	os.Exit(1)
 	// }
-}
-
-func getClient() (*vault.Client, error) {
-	client, err := vault.NewClient(vault.DefaultConfig())
-	if err != nil {
-		setupLog.Error(err, "unable to build vault client")
-		return nil, err
-	}
-
-	token, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
-	if err != nil {
-		setupLog.Error(err, "unable to read service account token")
-		return nil, err
-	}
-
-	secret, err := client.Logical().Write(viper.GetString(vaultstorage.KubeAuthPathFlagName)+"/login", map[string]interface{}{
-		"jwt":  string(token),
-		"role": "vault-apiserver-dev",
-	})
-
-	if err != nil {
-		setupLog.Error(err, "unable to login to vault")
-		return nil, err
-	}
-
-	client.SetToken(secret.Auth.ClientToken)
-
-	tokenWatcher, err := client.NewRenewer(&vault.RenewerInput{
-		Secret: secret,
-	})
-
-	if err != nil {
-		setupLog.Error(err, "unable to set up client toke watcher")
-		return nil, err
-	}
-
-	go tokenWatcher.Start()
-
-	go func() {
-		for {
-			select {
-			case renewOutput := <-tokenWatcher.RenewCh():
-				{
-					client.SetToken(renewOutput.Secret.Auth.ClientToken)
-				}
-			case _ = <-tokenWatcher.DoneCh():
-				{
-					return
-				}
-			}
-		}
-	}()
-
-	return client, nil
 }
